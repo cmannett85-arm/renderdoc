@@ -551,7 +551,8 @@
   DeclExt(EXT_attachment_feedback_loop_dynamic_state); \
   DeclExt(EXT_extended_dynamic_state3);                \
   DeclExt(EXT_mesh_shader);                            \
-  DeclExt(EXT_scalar_block_layout);
+  DeclExt(EXT_scalar_block_layout);                    \
+  DeclExt(KHR_deferred_host_operations);
 
 // for simplicity and since the check itself is platform agnostic,
 // these aren't protected in platform defines
@@ -673,7 +674,8 @@
   CheckExt(EXT_attachment_feedback_loop_dynamic_state, VKXX); \
   CheckExt(EXT_extended_dynamic_state3, VKXX);                \
   CheckExt(EXT_mesh_shader, VKXX);                            \
-  CheckExt(EXT_scalar_block_layout, VK12);
+  CheckExt(EXT_scalar_block_layout, VK12);                    \
+  CheckExt(KHR_deferred_host_operations, VK13);
 
 #define HookInitVulkanInstanceExts_PhysDev()                                                         \
   HookInitExtension(KHR_surface, GetPhysicalDeviceSurfaceSupportKHR);                                \
@@ -971,6 +973,11 @@
   HookInitExtension(EXT_mesh_shader, CmdDrawMeshTasksEXT);                                         \
   HookInitExtension(EXT_mesh_shader, CmdDrawMeshTasksIndirectEXT);                                 \
   HookInitExtension(EXT_mesh_shader, CmdDrawMeshTasksIndirectCountEXT);                            \
+  HookInitExtension(KHR_deferred_host_operations, CreateDeferredOperationKHR);                     \
+  HookInitExtension(KHR_deferred_host_operations, DeferredOperationJoinKHR);                       \
+  HookInitExtension(KHR_deferred_host_operations, DestroyDeferredOperationKHR);                    \
+  HookInitExtension(KHR_deferred_host_operations, GetDeferredOperationMaxConcurrencyKHR);          \
+  HookInitExtension(KHR_deferred_host_operations, GetDeferredOperationResultKHR);                  \
   HookInitExtension_Device_Win32();                                                                \
   HookInitExtension_Device_Linux();                                                                \
   HookInitExtension_Device_GGP();                                                                  \
@@ -1772,6 +1779,17 @@
   HookDefine7(void, vkCmdDrawMeshTasksIndirectCountEXT, VkCommandBuffer, commandBuffer, VkBuffer,    \
               buffer, VkDeviceSize, offset, VkBuffer, countBuffer, VkDeviceSize,                     \
               countBufferOffset, uint32_t, maxDrawCount, uint32_t, stride);                          \
+  HookDefine3(VkResult, vkCreateDeferredOperationKHR, VkDevice, device,                              \
+              const VkAllocationCallbacks *, pAllocator, VkDeferredOperationKHR *,                   \
+              pDeferredOperation);                                                                   \
+  HookDefine2(VkResult, vkDeferredOperationJoinKHR, VkDevice, device, VkDeferredOperationKHR,        \
+              operation);                                                                            \
+  HookDefine3(void, vkDestroyDeferredOperationKHR, VkDevice, device, VkDeferredOperationKHR,         \
+              operation, const VkAllocationCallbacks *, pAllocator);                                 \
+  HookDefine2(uint32_t, vkGetDeferredOperationMaxConcurrencyKHR, VkDevice, device,                   \
+              VkDeferredOperationKHR, operation);                                                    \
+  HookDefine2(VkResult, vkGetDeferredOperationResultKHR, VkDevice, device, VkDeferredOperationKHR,   \
+              operation);                                                                            \
   HookDefine_Win32();                                                                                \
   HookDefine_Linux();                                                                                \
   HookDefine_GGP();                                                                                  \

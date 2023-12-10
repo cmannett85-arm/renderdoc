@@ -7570,6 +7570,36 @@ void WrappedVulkan::vkCmdEndRendering(VkCommandBuffer commandBuffer)
   }
 }
 
+VkResult WrappedVulkan::vkCreateDeferredOperationKHR(VkDevice device,
+                                                     const VkAllocationCallbacks *pAllocator,
+                                                     VkDeferredOperationKHR *pDeferredOperation)
+{
+  return ObjDisp(device)->CreateDeferredOperationKHR(Unwrap(device), pAllocator, pDeferredOperation);
+}
+
+VkResult WrappedVulkan::vkDeferredOperationJoinKHR(VkDevice device, VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->DeferredOperationJoinKHR(Unwrap(device), operation);
+}
+
+void WrappedVulkan::vkDestroyDeferredOperationKHR(VkDevice device, VkDeferredOperationKHR operation,
+                                                  const VkAllocationCallbacks *pAllocator)
+{
+  return ObjDisp(device)->DestroyDeferredOperationKHR(Unwrap(device), operation, pAllocator);
+}
+
+uint32_t WrappedVulkan::vkGetDeferredOperationMaxConcurrencyKHR(VkDevice device,
+                                                                VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->GetDeferredOperationMaxConcurrencyKHR(Unwrap(device), operation);
+}
+
+VkResult WrappedVulkan::vkGetDeferredOperationResultKHR(VkDevice device,
+                                                        VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->GetDeferredOperationResultKHR(Unwrap(device), operation);
+}
+
 INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCreateCommandPool, VkDevice device,
                                 const VkCommandPoolCreateInfo *pCreateInfo,
                                 const VkAllocationCallbacks *pAllocator, VkCommandPool *pCommandPool);
