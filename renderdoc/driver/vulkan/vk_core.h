@@ -2798,4 +2798,13 @@ public:
                                 VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset,
                                 VkBuffer countBuffer, VkDeviceSize countBufferOffset,
                                 uint32_t maxDrawCount, uint32_t stride);
+
+  // VK_KHR_deferred_host_operations
+  VkResult vkCreateDeferredOperationKHR(VkDevice device, const VkAllocationCallbacks *pAllocator,
+                                        VkDeferredOperationKHR *pDeferredOperation);
+  VkResult vkDeferredOperationJoinKHR(VkDevice device, VkDeferredOperationKHR operation);
+  void vkDestroyDeferredOperationKHR(VkDevice device, VkDeferredOperationKHR operation,
+                                     const VkAllocationCallbacks *pAllocator);
+  uint32_t vkGetDeferredOperationMaxConcurrencyKHR(VkDevice device, VkDeferredOperationKHR operation);
+  VkResult vkGetDeferredOperationResultKHR(VkDevice device, VkDeferredOperationKHR operation);
 };
