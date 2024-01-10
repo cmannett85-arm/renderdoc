@@ -2045,14 +2045,14 @@ static ObjData GetObjData(VkObjectType objType, uint64_t object)
       break;
     }
 
-    // private data slots are not wrapped
-    case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT: ret.unwrapped = object; break;
+    // private data slots and deferred host operations are not wrapped
+    case VK_OBJECT_TYPE_PRIVATE_DATA_SLOT:
+    case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR: ret.unwrapped = object; break;
 
     // these objects are not supported
     case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR:
     case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV:
     case VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL:
-    case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR:
     case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:
     case VK_OBJECT_TYPE_CU_MODULE_NVX:
     case VK_OBJECT_TYPE_CU_FUNCTION_NVX:
@@ -2622,6 +2622,26 @@ void WrappedVulkan::vkGetPrivateData(VkDevice device, VkObjectType objectType, u
 
   return ObjDisp(device)->GetPrivateData(Unwrap(device), objectType, objdata.unwrapped,
                                          privateDataSlot, pData);
+}
+
+// deferred host operations are not supported, host operations are always captured non-deferred,
+// so these wrapped functions are just pass-throughs
+VkResult WrappedVulkan::vkCreateDeferredOperationKHR(VkDevice device,
+                                                     const VkAllocationCallbacks *pAllocator,
+                                                     VkDeferredOperationKHR *pDeferredOperation)
+{
+  return ObjDisp(device)->CreateDeferredOperationKHR(Unwrap(device), pAllocator, pDeferredOperation);
+}
+
+VkResult WrappedVulkan::vkDeferredOperationJoinKHR(VkDevice device, VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->DeferredOperationJoinKHR(Unwrap(device), operation);
+}
+
+void WrappedVulkan::vkDestroyDeferredOperationKHR(VkDevice device, VkDeferredOperationKHR operation,
+                                                  const VkAllocationCallbacks *pAllocator)
+{
+  return ObjDisp(device)->DestroyDeferredOperationKHR(Unwrap(device), operation, pAllocator);
 }
 
 INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCreateSampler, VkDevice device,

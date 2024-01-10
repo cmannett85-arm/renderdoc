@@ -1155,3 +1155,15 @@ VkResult WrappedVulkan::vkGetPhysicalDeviceFragmentShadingRatesKHR(
       ->GetPhysicalDeviceFragmentShadingRatesKHR(Unwrap(physicalDevice), pFragmentShadingRateCount,
                                                  pFragmentShadingRates);
 }
+
+uint32_t WrappedVulkan::vkGetDeferredOperationMaxConcurrencyKHR(VkDevice device,
+                                                                VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->GetDeferredOperationMaxConcurrencyKHR(Unwrap(device), operation);
+}
+
+VkResult WrappedVulkan::vkGetDeferredOperationResultKHR(VkDevice device,
+                                                        VkDeferredOperationKHR operation)
+{
+  return ObjDisp(device)->GetDeferredOperationResultKHR(Unwrap(device), operation);
+}
