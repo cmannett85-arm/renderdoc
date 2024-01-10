@@ -675,7 +675,7 @@
   CheckExt(EXT_extended_dynamic_state3, VKXX);                \
   CheckExt(EXT_mesh_shader, VKXX);                            \
   CheckExt(EXT_scalar_block_layout, VK12);                    \
-  CheckExt(KHR_deferred_host_operations, VK13);
+  CheckExt(KHR_deferred_host_operations, VKXX);
 
 #define HookInitVulkanInstanceExts_PhysDev()                                                         \
   HookInitExtension(KHR_surface, GetPhysicalDeviceSurfaceSupportKHR);                                \
