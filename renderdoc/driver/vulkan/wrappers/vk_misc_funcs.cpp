@@ -568,6 +568,13 @@ bool WrappedVulkan::ReleaseResource(WrappedVkRes *res)
       vt->DestroySamplerYcbcrConversion(Unwrap(dev), real, NULL);
       break;
     }
+    case eResAccelerationStructureKHR:
+    {
+      VkAccelerationStructureKHR real = nondisp->real.As<VkAccelerationStructureKHR>();
+      GetResourceManager()->ReleaseWrappedResource(VkAccelerationStructureKHR(handle));
+      vt->DestroyAccelerationStructureKHR(Unwrap(dev), real, NULL);
+      break;
+    }
   }
 
   return true;
@@ -2271,6 +2278,9 @@ bool WrappedVulkan::Serialise_vkDebugMarkerSetObjectNameEXT(
         case eResSamplerConversion:
           type = VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION_EXT;
           break;
+        case eResAccelerationStructureKHR:
+          type = VK_DEBUG_REPORT_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR_EXT;
+          break;
       }
 
       if(ObjDisp(m_Device)->DebugMarkerSetObjectNameEXT &&
@@ -2460,6 +2470,7 @@ bool WrappedVulkan::Serialise_vkSetDebugUtilsObjectNameEXT(
         case eResSurface: type = VK_OBJECT_TYPE_SURFACE_KHR; break;
         case eResDescUpdateTemplate: type = VK_OBJECT_TYPE_DESCRIPTOR_UPDATE_TEMPLATE; break;
         case eResSamplerConversion: type = VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION; break;
+        case eResAccelerationStructureKHR: type = VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR; break;
       }
 
       if(ObjDisp(m_Device)->SetDebugUtilsObjectNameEXT && type != VK_OBJECT_TYPE_UNKNOWN &&
