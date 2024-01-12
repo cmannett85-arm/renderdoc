@@ -11497,24 +11497,26 @@ void DoSerialise(SerialiserType &ser, VkAccelerationStructureBuildGeometryInfoKH
 
   // flatten the indirect array into single pGeometries-like list.  Only one of ppGeometries or
   // pGeometries can be NULL
+  VkAccelerationStructureGeometryKHR *pGeometries =
+      (VkAccelerationStructureGeometryKHR *)el.pGeometries;
   if(ser.IsWriting() && el.ppGeometries)
   {
-    VkAccelerationStructureGeometryKHR *pGeometries =
-        new VkAccelerationStructureGeometryKHR[el.geometryCount];
+    pGeometries = new VkAccelerationStructureGeometryKHR[el.geometryCount];
     for(uint32_t i = 0; i < el.geometryCount; ++i)
     {
       pGeometries[i] = *(el.ppGeometries[i]);
     }
-
-    ser.Serialise("pGeometries"_lit, pGeometries, el.geometryCount, SerialiserFlags::NoFlags);
-  }
-  else
-  {
-    SERIALISE_MEMBER_ARRAY(pGeometries, geometryCount);
   }
 
+  ser.Serialise("pGeometries"_lit, pGeometries, el.geometryCount, SerialiserFlags::AllocateMemory);
+
+  if(ser.IsWriting() && el.ppGeometries)
+    delete[] pGeometries;
   if(ser.IsReading())
+  {
+    el.pGeometries = pGeometries;
     el.ppGeometries = NULL;
+  }
 
   SERIALISE_MEMBER(scratchData);
 }
