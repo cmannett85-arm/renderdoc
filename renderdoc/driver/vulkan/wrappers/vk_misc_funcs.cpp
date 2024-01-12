@@ -2023,6 +2023,9 @@ static ObjData GetObjData(VkObjectType objType, uint64_t object)
     case VK_OBJECT_TYPE_SAMPLER_YCBCR_CONVERSION:
       ret.record = GetRecord((VkSamplerYcbcrConversion)object);
       break;
+    case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR:
+      ret.record = GetRecord((VkAccelerationStructureKHR)object);
+      break;
 
     /////////////////////////////
     // special cases
@@ -2057,7 +2060,6 @@ static ObjData GetObjData(VkObjectType objType, uint64_t object)
     case VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR: ret.unwrapped = object; break;
 
     // these objects are not supported
-    case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR:
     case VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV:
     case VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL:
     case VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV:

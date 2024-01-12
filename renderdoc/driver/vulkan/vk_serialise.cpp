@@ -11497,20 +11497,21 @@ void DoSerialise(SerialiserType &ser, VkAccelerationStructureBuildGeometryInfoKH
 
   // flatten the indirect array into single pGeometries-like list.  Only one of ppGeometries or
   // pGeometries can be NULL
-  if(el.ppGeometries)
+  if(ser.IsWriting() && el.ppGeometries)
   {
-    auto *pGeometries = new VkAccelerationStructureGeometryKHR[el.geometryCount];
+    VkAccelerationStructureGeometryKHR *pGeometries =
+        new VkAccelerationStructureGeometryKHR[el.geometryCount];
     for(uint32_t i = 0; i < el.geometryCount; ++i)
     {
       pGeometries[i] = *(el.ppGeometries[i]);
     }
 
-    delete[] el.ppGeometries;
-    el.ppGeometries = NULL;
-    el.pGeometries = pGeometries;
+    ser.Serialise("pGeometries"_lit, pGeometries, el.geometryCount, SerialiserFlags::NoFlags);
   }
-
-  SERIALISE_MEMBER_ARRAY(pGeometries, geometryCount);
+  else
+  {
+    SERIALISE_MEMBER_ARRAY(pGeometries, geometryCount);
+  }
 
   if(ser.IsReading())
     el.ppGeometries = NULL;
@@ -11669,17 +11670,25 @@ void DoSerialise(SerialiserType &ser, VkAccelerationStructureInstanceKHR &el)
 
   uint32_t instanceCustomIndex = el.instanceCustomIndex & 0xffffff;
   ser.Serialise("instanceCustomIndex"_lit, instanceCustomIndex);
+  if(ser.IsReading())
+    el.instanceCustomIndex = instanceCustomIndex & 0xff;
 
   uint32_t mask = el.mask & 0xff;
   ser.Serialise("mask"_lit, mask);
+  if(ser.IsReading())
+    el.mask = mask & 0xff;
 
   uint32_t instanceShaderBindingTableRecordOffset =
       el.instanceShaderBindingTableRecordOffset & 0xffffff;
   ser.Serialise("instanceShaderBindingTableRecordOffset"_lit, instanceShaderBindingTableRecordOffset)
       .OffsetOrSize();
+  if(ser.IsReading())
+    el.instanceShaderBindingTableRecordOffset = instanceShaderBindingTableRecordOffset & 0xff;
 
   uint32_t flags = el.flags & 0xff;
   ser.Serialise("flags"_lit, flags);
+  if(ser.IsReading())
+    el.flags = flags & 0xff;
 
   SERIALISE_MEMBER(accelerationStructureReference);
 }
@@ -11690,12 +11699,8 @@ void DoSerialise(SerialiserType &ser, VkAccelerationStructureVersionInfoKHR &el)
   RDCASSERT(ser.IsReading() || el.sType == VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_VERSION_INFO_KHR);
   SerialiseNext(ser, el.sType, el.pNext);
 
-  uint8_t *pVersionData = new uint8_t[2 * VK_UUID_SIZE];
-  memcpy(pVersionData, el.pVersionData, 2 * VK_UUID_SIZE);
-  ser.Serialise("pVersionData"_lit, pVersionData, 2 * VK_UUID_SIZE);
-
-  delete[] el.pVersionData;
-  el.pVersionData = pVersionData;
+  ser.Serialise("pVersionData"_lit, el.pVersionData, 2 * VK_UUID_SIZE,
+                SerialiserFlags::AllocateMemory);
 }
 
 template <>
@@ -11762,7 +11767,7 @@ template <typename SerialiserType>
 void DoSerialise(SerialiserType &ser, VkTransformMatrixKHR &el)
 {
   float *data = &el.matrix[0][0];
-  ser.Serialise("matrix"_lit, data, 3 * 4 * sizeof(float));
+  ser.Serialise("matrix"_lit, data, 3 * 4 * sizeof(float), SerialiserFlags::NoFlags);
 }
 
 template <typename SerialiserType>
@@ -11837,25 +11842,15 @@ void DoSerialise(SerialiserType &ser, VkAccelerationStructureGeometryDataKHR &el
 template <typename SerialiserType>
 void DoSerialise(SerialiserType &ser, VkDeviceOrHostAddressConstKHR &el)
 {
+  // VkDeviceOrHostAddressConstKHR is a union where the deviceAddress is guaranteed to be 64bit,
+  // so no need to explicitly serialise hostAddress
   SERIALISE_MEMBER(deviceAddress);
-
-  // don't serialise void*, otherwise capture/replay between different bit-ness won't work
-  uint64_t addr = reinterpret_cast<uint64_t>(el.hostAddress);
-  ser.Serialise("hostAddress"_lit, addr);
-  if(ser.IsReading())
-    el.hostAddress = reinterpret_cast<const void *>(addr);
 }
 
 template <typename SerialiserType>
 void DoSerialise(SerialiserType &ser, VkDeviceOrHostAddressKHR &el)
 {
   SERIALISE_MEMBER(deviceAddress);
-
-  // don't serialise void*, otherwise capture/replay between different bit-ness won't work
-  uint64_t addr = reinterpret_cast<uint64_t>(el.hostAddress);
-  ser.Serialise("hostAddress"_lit, addr);
-  if(ser.IsReading())
-    el.hostAddress = reinterpret_cast<void *>(addr);
 }
 
 // pNext structs - always have deserialise for the next chain

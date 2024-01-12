@@ -1490,7 +1490,8 @@ size_t GetNextPatchSize(const void *pNext)
       {
         memSize += sizeof(VkWriteDescriptorSetAccelerationStructureKHR);
 
-        auto *info = (VkWriteDescriptorSetAccelerationStructureKHR *)next;
+        VkWriteDescriptorSetAccelerationStructureKHR *info =
+            (VkWriteDescriptorSetAccelerationStructureKHR *)next;
         memSize += info->accelerationStructureCount * sizeof(VkAccelerationStructureKHR);
         break;
       }
@@ -2668,14 +2669,16 @@ void UnwrapNextChain(CaptureState state, const char *structName, byte *&tempMem,
       }
       case VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR:
       {
-        const auto *in = (const VkWriteDescriptorSetAccelerationStructureKHR *)nextInput;
-        auto *out = (VkWriteDescriptorSetAccelerationStructureKHR *)tempMem;
+        const VkWriteDescriptorSetAccelerationStructureKHR *in =
+            (const VkWriteDescriptorSetAccelerationStructureKHR *)nextInput;
+        VkWriteDescriptorSetAccelerationStructureKHR *out =
+            (VkWriteDescriptorSetAccelerationStructureKHR *)tempMem;
 
         // append immediately so tempMem is incremented
         AppendModifiedChainedStruct(tempMem, out, nextChainTail);
 
         // allocate unwrapped array
-        auto *outAS = (VkAccelerationStructureKHR *)tempMem;
+        VkAccelerationStructureKHR *outAS = (VkAccelerationStructureKHR *)tempMem;
         tempMem += sizeof(VkAccelerationStructureKHR) * in->accelerationStructureCount;
 
         *out = *in;
