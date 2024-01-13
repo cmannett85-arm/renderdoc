@@ -2809,10 +2809,6 @@ public:
   VkResult vkGetDeferredOperationResultKHR(VkDevice device, VkDeferredOperationKHR operation);
 
   // VK_KHR_acceleration_structure
-  IMPLEMENT_FUNCTION_SERIALISED(VkResult, vkBuildAccelerationStructuresKHR, VkDevice device,
-                                VkDeferredOperationKHR deferredOperation, uint32_t infoCount,
-                                const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
-                                const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
   IMPLEMENT_FUNCTION_SERIALISED(void, vkCmdBuildAccelerationStructuresIndirectKHR,
                                 VkCommandBuffer commandBuffer, uint32_t infoCount,
                                 const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
@@ -2836,15 +2832,6 @@ public:
       VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount,
       const VkAccelerationStructureKHR *pAccelerationStructures, VkQueryType queryType,
       VkQueryPool queryPool, uint32_t firstQuery);
-  IMPLEMENT_FUNCTION_SERIALISED(VkResult, vkCopyAccelerationStructureKHR, VkDevice device,
-                                VkDeferredOperationKHR deferredOperation,
-                                const VkCopyAccelerationStructureInfoKHR *pInfo);
-  IMPLEMENT_FUNCTION_SERIALISED(VkResult, vkCopyAccelerationStructureToMemoryKHR, VkDevice device,
-                                VkDeferredOperationKHR deferredOperation,
-                                const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo);
-  IMPLEMENT_FUNCTION_SERIALISED(VkResult, vkCopyMemoryToAccelerationStructureKHR, VkDevice device,
-                                VkDeferredOperationKHR deferredOperation,
-                                const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo);
   IMPLEMENT_FUNCTION_SERIALISED(VkResult, vkCreateAccelerationStructureKHR, VkDevice device,
                                 const VkAccelerationStructureCreateInfoKHR *pCreateInfo,
                                 const VkAllocationCallbacks *pAllocator,
