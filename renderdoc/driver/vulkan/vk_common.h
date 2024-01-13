@@ -978,6 +978,16 @@ enum class VulkanChunk : uint32_t
   vkCmdDrawMeshTasksEXT,
   vkCmdDrawMeshTasksIndirectEXT,
   vkCmdDrawMeshTasksIndirectCountEXT,
+  vkBuildAccelerationStructuresKHR,
+  vkCmdBuildAccelerationStructuresIndirectKHR,
+  vkCmdBuildAccelerationStructuresKHR,
+  vkCmdCopyAccelerationStructureKHR,
+  vkCmdCopyAccelerationStructureToMemoryKHR,
+  vkCmdCopyMemoryToAccelerationStructureKHR,
+  vkCopyAccelerationStructureKHR,
+  vkCopyAccelerationStructureToMemoryKHR,
+  vkCopyMemoryToAccelerationStructureKHR,
+  vkCreateAccelerationStructureKHR,
   Max,
 };
 
@@ -1970,6 +1980,10 @@ DECLARE_REFLECTION_STRUCT(VkVertexInputBindingDescription);
 DECLARE_REFLECTION_STRUCT(VkVertexInputBindingDivisorDescriptionEXT);
 DECLARE_REFLECTION_STRUCT(VkViewport);
 DECLARE_REFLECTION_STRUCT(VkXYColorEXT);
+
+// Array serialisation
+DECLARE_REFLECTION_STRUCT(rdcarray<VkAccelerationStructureBuildRangeInfoKHR>);
+DECLARE_REFLECTION_STRUCT(rdcarray<uint32_t>);
 
 DECLARE_DESERIALISE_TYPE(VkDescriptorSetLayoutBinding);
 DECLARE_DESERIALISE_TYPE(VkPresentRegionKHR);

@@ -184,6 +184,7 @@ DESTROY_IMPL(VkCommandPool, DestroyCommandPool)
 DESTROY_IMPL(VkQueryPool, DestroyQueryPool)
 DESTROY_IMPL(VkDescriptorUpdateTemplate, DestroyDescriptorUpdateTemplate)
 DESTROY_IMPL(VkSamplerYcbcrConversion, DestroySamplerYcbcrConversion)
+DESTROY_IMPL(VkAccelerationStructureKHR, DestroyAccelerationStructureKHR)
 
 #undef DESTROY_IMPL
 

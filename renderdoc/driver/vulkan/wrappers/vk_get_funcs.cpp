@@ -1167,3 +1167,28 @@ VkResult WrappedVulkan::vkGetDeferredOperationResultKHR(VkDevice device,
 {
   return ObjDisp(device)->GetDeferredOperationResultKHR(Unwrap(device), operation);
 }
+
+void WrappedVulkan::vkGetAccelerationStructureBuildSizesKHR(
+    VkDevice device, VkAccelerationStructureBuildTypeKHR buildType,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pBuildInfo,
+    const uint32_t *pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR *pSizeInfo)
+{
+  ObjDisp(device)->GetAccelerationStructureBuildSizesKHR(Unwrap(device), buildType, pBuildInfo,
+                                                         pMaxPrimitiveCounts, pSizeInfo);
+}
+
+VkDeviceAddress WrappedVulkan::vkGetAccelerationStructureDeviceAddressKHR(
+    VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR *pInfo)
+{
+  VkAccelerationStructureDeviceAddressInfoKHR info = *pInfo;
+  info.accelerationStructure = Unwrap(info.accelerationStructure);
+  return ObjDisp(device)->GetAccelerationStructureDeviceAddressKHR(Unwrap(device), &info);
+}
+
+void WrappedVulkan::vkGetDeviceAccelerationStructureCompatibilityKHR(
+    VkDevice device, const VkAccelerationStructureVersionInfoKHR *pVersionInfo,
+    VkAccelerationStructureCompatibilityKHR *pCompatibility)
+{
+  ObjDisp(device)->GetDeviceAccelerationStructureCompatibilityKHR(Unwrap(device), pVersionInfo,
+                                                                  pCompatibility);
+}

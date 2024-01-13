@@ -3969,6 +3969,31 @@ bool WrappedVulkan::ProcessChunk(ReadSerialiser &ser, VulkanChunk chunk)
       return Serialise_vkCmdSetTessellationDomainOriginEXT(ser, VK_NULL_HANDLE,
                                                            VK_TESSELLATION_DOMAIN_ORIGIN_MAX_ENUM);
 
+    case VulkanChunk::vkBuildAccelerationStructuresKHR:
+      return Serialise_vkBuildAccelerationStructuresKHR(ser, VK_NULL_HANDLE, VK_NULL_HANDLE, 0,
+                                                        NULL, NULL);
+    case VulkanChunk::vkCmdBuildAccelerationStructuresIndirectKHR:
+      return Serialise_vkCmdBuildAccelerationStructuresIndirectKHR(ser, VK_NULL_HANDLE, 0, NULL,
+                                                                   NULL, NULL, NULL);
+    case VulkanChunk::vkCmdBuildAccelerationStructuresKHR:
+      return Serialise_vkCmdBuildAccelerationStructuresKHR(ser, VK_NULL_HANDLE, 0, NULL, NULL);
+    case VulkanChunk::vkCmdCopyAccelerationStructureKHR:
+      return Serialise_vkCmdCopyAccelerationStructureKHR(ser, VK_NULL_HANDLE, NULL);
+    case VulkanChunk::vkCmdCopyAccelerationStructureToMemoryKHR:
+      return Serialise_vkCmdCopyAccelerationStructureToMemoryKHR(ser, VK_NULL_HANDLE, NULL);
+    case VulkanChunk::vkCmdCopyMemoryToAccelerationStructureKHR:
+      return Serialise_vkCmdCopyMemoryToAccelerationStructureKHR(ser, VK_NULL_HANDLE, NULL);
+    case VulkanChunk::vkCopyAccelerationStructureKHR:
+      return Serialise_vkCopyAccelerationStructureKHR(ser, VK_NULL_HANDLE, VK_NULL_HANDLE, NULL);
+    case VulkanChunk::vkCopyAccelerationStructureToMemoryKHR:
+      return Serialise_vkCopyAccelerationStructureToMemoryKHR(ser, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                                              NULL);
+    case VulkanChunk::vkCopyMemoryToAccelerationStructureKHR:
+      return Serialise_vkCopyMemoryToAccelerationStructureKHR(ser, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                                              NULL);
+    case VulkanChunk::vkCreateAccelerationStructureKHR:
+      return Serialise_vkCreateAccelerationStructureKHR(ser, VK_NULL_HANDLE, NULL, NULL, NULL);
+
     // chunks that are reserved but not yet serialised
     case VulkanChunk::vkResetCommandPool:
     case VulkanChunk::vkCreateDepthTargetView:

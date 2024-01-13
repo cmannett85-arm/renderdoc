@@ -25,6 +25,7 @@
 #include "../vk_core.h"
 #include "../vk_debug.h"
 #include "core/settings.h"
+#include "driver/vulkan/vk_common.h"
 
 RDOC_DEBUG_CONFIG(
     bool, Vulkan_Debug_VerboseCommandRecording, false,
@@ -7570,6 +7571,667 @@ void WrappedVulkan::vkCmdEndRendering(VkCommandBuffer commandBuffer)
   }
 }
 
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkBuildAccelerationStructuresKHR(
+    SerialiserType &ser, VkDevice device, VkDeferredOperationKHR /*deferredOperation*/,
+    uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)
+{
+  SERIALISE_ELEMENT(device);
+  SERIALISE_ELEMENT(infoCount).Important();
+  SERIALISE_ELEMENT_ARRAY(pInfos, infoCount);
+
+  // Convert the array of arrays for easier serialisation
+  {
+    rdcarray<rdcarray<VkAccelerationStructureBuildRangeInfoKHR>> rangeInfos;
+    rangeInfos.reserve(infoCount);
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      rangeInfos.push_back({});
+      auto &rangeInfo = rangeInfos.back();
+
+      rangeInfo.resize(pInfos[i].geometryCount);
+      memcpy(rangeInfo.data(), ppBuildRangeInfos[i],
+             rangeInfo.size() * sizeof(VkAccelerationStructureBuildRangeInfoKHR));
+    }
+    SERIALISE_ELEMENT(rangeInfos);
+  }
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    VkResult ret = ObjDisp(device)->BuildAccelerationStructuresKHR(
+        Unwrap(device), VK_NULL_HANDLE, infoCount, unwrappedInfos, ppBuildRangeInfos);
+
+    if(ret != VK_SUCCESS)
+    {
+      SET_ERROR_RESULT(m_FailedReplayResult, ResultCode::APIReplayFailed,
+                       "Failed to build acceleration structures, VkResult: %s", ToStr(ret).c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+VkResult WrappedVulkan::vkBuildAccelerationStructuresKHR(
+    VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)
+{
+  VkResult ret;
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    SERIALISE_TIME_CALL(
+        ret = ObjDisp(device)->BuildAccelerationStructuresKHR(
+            Unwrap(device), deferredOperation, infoCount, unwrappedInfos, ppBuildRangeInfos));
+  }
+
+  if(ret == VK_SUCCESS && IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkBuildAccelerationStructuresKHR);
+      Serialise_vkBuildAccelerationStructuresKHR(ser, device, deferredOperation, infoCount, pInfos,
+                                                 ppBuildRangeInfos);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      const VkAccelerationStructureBuildGeometryInfoKHR &geomInfo = pInfos[i];
+      if(geomInfo.srcAccelerationStructure != VK_NULL_HANDLE)
+        GetResourceManager()->MarkResourceFrameReferenced(
+            GetResID(geomInfo.srcAccelerationStructure), eFrameRef_Read);
+
+      FrameRefType refType = pInfos[i].mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR
+                                 ? eFrameRef_CompleteWrite
+                                 : eFrameRef_PartialWrite;
+      GetResourceManager()->MarkResourceFrameReferenced(GetResID(geomInfo.dstAccelerationStructure),
+                                                        refType);
+    }
+  }
+
+  return ret;
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCmdBuildAccelerationStructuresIndirectKHR(
+    SerialiserType &ser, VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkDeviceAddress *pIndirectDeviceAddresses, const uint32_t *pIndirectStrides,
+    const uint32_t *const *ppMaxPrimitiveCounts)
+{
+  SERIALISE_ELEMENT(commandBuffer);
+  SERIALISE_ELEMENT(infoCount).Important();
+  SERIALISE_ELEMENT_ARRAY(pInfos, infoCount);
+  SERIALISE_ELEMENT_ARRAY(pIndirectDeviceAddresses, infoCount);
+  SERIALISE_ELEMENT_ARRAY(pIndirectStrides, infoCount);
+
+  // Convert the array of arrays for easier serialisation
+  {
+    rdcarray<rdcarray<uint32_t>> maxPrimitives;
+    maxPrimitives.reserve(infoCount);
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      maxPrimitives.push_back({});
+      auto &rangeInfo = maxPrimitives.back();
+
+      rangeInfo.resize(pInfos[i].geometryCount);
+      memcpy(rangeInfo.data(), ppMaxPrimitiveCounts[i], rangeInfo.size() * sizeof(uint32_t));
+    }
+    SERIALISE_ELEMENT(maxPrimitives);
+  }
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    ObjDisp(commandBuffer)
+        ->CmdBuildAccelerationStructuresIndirectKHR(Unwrap(commandBuffer), infoCount,
+                                                    unwrappedInfos, pIndirectDeviceAddresses,
+                                                    pIndirectStrides, ppMaxPrimitiveCounts);
+  }
+
+  return true;
+}
+
+void WrappedVulkan::vkCmdBuildAccelerationStructuresIndirectKHR(
+    VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkDeviceAddress *pIndirectDeviceAddresses, const uint32_t *pIndirectStrides,
+    const uint32_t *const *ppMaxPrimitiveCounts)
+{
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    SERIALISE_TIME_CALL(ObjDisp(commandBuffer)
+                            ->CmdBuildAccelerationStructuresIndirectKHR(
+                                Unwrap(commandBuffer), infoCount, unwrappedInfos,
+                                pIndirectDeviceAddresses, pIndirectStrides, ppMaxPrimitiveCounts));
+  }
+
+  if(IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCmdBuildAccelerationStructuresIndirectKHR);
+      Serialise_vkCmdBuildAccelerationStructuresIndirectKHR(ser, commandBuffer, infoCount, pInfos,
+                                                            pIndirectDeviceAddresses,
+                                                            pIndirectStrides, ppMaxPrimitiveCounts);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      const VkAccelerationStructureBuildGeometryInfoKHR &geomInfo = pInfos[i];
+      if(geomInfo.srcAccelerationStructure != VK_NULL_HANDLE)
+        GetResourceManager()->MarkResourceFrameReferenced(
+            GetResID(geomInfo.srcAccelerationStructure), eFrameRef_Read);
+
+      FrameRefType refType = pInfos[i].mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR
+                                 ? eFrameRef_CompleteWrite
+                                 : eFrameRef_PartialWrite;
+      GetResourceManager()->MarkResourceFrameReferenced(GetResID(geomInfo.dstAccelerationStructure),
+                                                        refType);
+    }
+  }
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCmdBuildAccelerationStructuresKHR(
+    SerialiserType &ser, VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)
+{
+  SERIALISE_ELEMENT(commandBuffer);
+  SERIALISE_ELEMENT(infoCount).Important();
+  SERIALISE_ELEMENT_ARRAY(pInfos, infoCount);
+
+  // Convert the array of arrays for easier serialisation
+  {
+    rdcarray<rdcarray<VkAccelerationStructureBuildRangeInfoKHR>> rangeInfos;
+    rangeInfos.reserve(infoCount);
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      rangeInfos.push_back({});
+      auto &rangeInfo = rangeInfos.back();
+
+      rangeInfo.resize(pInfos[i].geometryCount);
+      memcpy(rangeInfo.data(), ppBuildRangeInfos[i],
+             rangeInfo.size() * sizeof(VkAccelerationStructureBuildRangeInfoKHR));
+    }
+    SERIALISE_ELEMENT(rangeInfos);
+  }
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    ObjDisp(commandBuffer)
+        ->CmdBuildAccelerationStructuresKHR(Unwrap(commandBuffer), infoCount, unwrappedInfos,
+                                            ppBuildRangeInfos);
+  }
+
+  return true;
+}
+
+void WrappedVulkan::vkCmdBuildAccelerationStructuresKHR(
+    VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos)
+{
+  {
+    size_t tempmemSize = sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+    for(uint32_t i = 0; i < infoCount; ++i)
+      tempmemSize += GetNextPatchSize(&pInfos[i]);
+
+    byte *memory = GetTempMemory(tempmemSize);
+    auto *unwrappedInfos = reinterpret_cast<VkAccelerationStructureBuildGeometryInfoKHR *>(memory);
+    memory += sizeof(VkAccelerationStructureBuildGeometryInfoKHR) * infoCount;
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+      unwrappedInfos[i] = *UnwrapStructAndChain(m_State, memory, &pInfos[i]);
+
+    SERIALISE_TIME_CALL(ObjDisp(commandBuffer)
+                            ->CmdBuildAccelerationStructuresKHR(Unwrap(commandBuffer), infoCount,
+                                                                unwrappedInfos, ppBuildRangeInfos));
+  }
+
+  if(IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCmdBuildAccelerationStructuresKHR);
+      Serialise_vkCmdBuildAccelerationStructuresKHR(ser, commandBuffer, infoCount, pInfos,
+                                                    ppBuildRangeInfos);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    for(uint32_t i = 0; i < infoCount; ++i)
+    {
+      const VkAccelerationStructureBuildGeometryInfoKHR &geomInfo = pInfos[i];
+      if(geomInfo.srcAccelerationStructure != VK_NULL_HANDLE)
+        GetResourceManager()->MarkResourceFrameReferenced(
+            GetResID(geomInfo.srcAccelerationStructure), eFrameRef_Read);
+
+      FrameRefType refType = pInfos[i].mode == VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR
+                                 ? eFrameRef_CompleteWrite
+                                 : eFrameRef_PartialWrite;
+      GetResourceManager()->MarkResourceFrameReferenced(GetResID(geomInfo.dstAccelerationStructure),
+                                                        refType);
+    }
+  }
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCmdCopyAccelerationStructureKHR(
+    SerialiserType &ser, VkCommandBuffer commandBuffer,
+    const VkCopyAccelerationStructureInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(commandBuffer);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyAccelerationStructureInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+
+    ObjDisp(commandBuffer)->CmdCopyAccelerationStructureKHR(Unwrap(commandBuffer), &unwrappedInfo);
+  }
+
+  return true;
+}
+
+void WrappedVulkan::vkCmdCopyAccelerationStructureKHR(VkCommandBuffer commandBuffer,
+                                                      const VkCopyAccelerationStructureInfoKHR *pInfo)
+{
+  VkCopyAccelerationStructureInfoKHR unwrappedInfo = *pInfo;
+  unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+  unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+  SERIALISE_TIME_CALL(
+      ObjDisp(commandBuffer)->CmdCopyAccelerationStructureKHR(Unwrap(commandBuffer), &unwrappedInfo));
+
+  if(IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCmdCopyAccelerationStructureKHR);
+      Serialise_vkCmdCopyAccelerationStructureKHR(ser, commandBuffer, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->src), eFrameRef_Read);
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->dst), eFrameRef_CompleteWrite);
+  }
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCmdCopyAccelerationStructureToMemoryKHR(
+    SerialiserType &ser, VkCommandBuffer commandBuffer,
+    const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(commandBuffer);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyAccelerationStructureToMemoryInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+
+    ObjDisp(commandBuffer)->CmdCopyAccelerationStructureToMemoryKHR(Unwrap(commandBuffer), &unwrappedInfo);
+  }
+
+  return true;
+}
+
+void WrappedVulkan::vkCmdCopyAccelerationStructureToMemoryKHR(
+    VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+{
+  VkCopyAccelerationStructureToMemoryInfoKHR unwrappedInfo = *pInfo;
+  unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+  SERIALISE_TIME_CALL(
+      ObjDisp(commandBuffer)
+          ->CmdCopyAccelerationStructureToMemoryKHR(Unwrap(commandBuffer), &unwrappedInfo));
+
+  if(IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCmdCopyAccelerationStructureToMemoryKHR);
+      Serialise_vkCmdCopyAccelerationStructureToMemoryKHR(ser, commandBuffer, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->src), eFrameRef_Read);
+  }
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCmdCopyMemoryToAccelerationStructureKHR(
+    SerialiserType &ser, VkCommandBuffer commandBuffer,
+    const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(commandBuffer);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyMemoryToAccelerationStructureInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+
+    ObjDisp(commandBuffer)->CmdCopyMemoryToAccelerationStructureKHR(Unwrap(commandBuffer), &unwrappedInfo);
+  }
+
+  return true;
+}
+
+void WrappedVulkan::vkCmdCopyMemoryToAccelerationStructureKHR(
+    VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)
+{
+  VkCopyMemoryToAccelerationStructureInfoKHR unwrappedInfo = *pInfo;
+  unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+  SERIALISE_TIME_CALL(
+      ObjDisp(commandBuffer)
+          ->CmdCopyMemoryToAccelerationStructureKHR(Unwrap(commandBuffer), &unwrappedInfo));
+
+  if(IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCmdCopyMemoryToAccelerationStructureKHR);
+      Serialise_vkCmdCopyMemoryToAccelerationStructureKHR(ser, commandBuffer, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->dst), eFrameRef_CompleteWrite);
+  }
+}
+
+void WrappedVulkan::vkCmdWriteAccelerationStructuresPropertiesKHR(
+    VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount,
+    const VkAccelerationStructureKHR *pAccelerationStructures, VkQueryType queryType,
+    VkQueryPool queryPool, uint32_t firstQuery)
+{
+  byte *memory = GetTempMemory(sizeof(VkAccelerationStructureKHR) * accelerationStructureCount);
+  auto *unwrappedASes = reinterpret_cast<VkAccelerationStructureKHR *>(memory);
+  for(uint32_t i = 0; i < accelerationStructureCount; ++i)
+    unwrappedASes[i] = Unwrap(pAccelerationStructures[i]);
+
+  ObjDisp(commandBuffer)
+      ->CmdWriteAccelerationStructuresPropertiesKHR(Unwrap(commandBuffer),
+                                                    accelerationStructureCount, unwrappedASes,
+                                                    queryType, Unwrap(queryPool), firstQuery);
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCopyAccelerationStructureKHR(
+    SerialiserType &ser, VkDevice device, VkDeferredOperationKHR /*deferredOperation*/,
+    const VkCopyAccelerationStructureInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(device);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyAccelerationStructureInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+
+    VkResult ret = ObjDisp(device)->CopyAccelerationStructureKHR(Unwrap(device), VK_NULL_HANDLE,
+                                                                 &unwrappedInfo);
+
+    if(ret != VK_SUCCESS)
+    {
+      SET_ERROR_RESULT(m_FailedReplayResult, ResultCode::APIReplayFailed,
+                       "Failed to copy acceleration structure, VkResult: %s", ToStr(ret).c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+VkResult WrappedVulkan::vkCopyAccelerationStructureKHR(VkDevice device,
+                                                       VkDeferredOperationKHR deferredOperation,
+                                                       const VkCopyAccelerationStructureInfoKHR *pInfo)
+{
+  VkResult ret;
+  {
+    VkCopyAccelerationStructureInfoKHR unwrappedInfo = *pInfo;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+    SERIALISE_TIME_CALL(ret = ObjDisp(device)->CopyAccelerationStructureKHR(
+                            Unwrap(device), VK_NULL_HANDLE, &unwrappedInfo));
+  }
+
+  if(ret == VK_SUCCESS && IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCopyAccelerationStructureKHR);
+      Serialise_vkCopyAccelerationStructureKHR(ser, device, deferredOperation, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->src), eFrameRef_Read);
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->dst), eFrameRef_CompleteWrite);
+  }
+
+  return ret;
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCopyAccelerationStructureToMemoryKHR(
+    SerialiserType &ser, VkDevice device, VkDeferredOperationKHR /*deferredOperation*/,
+    const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(device);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyAccelerationStructureToMemoryInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+
+    VkResult ret = ObjDisp(device)->CopyAccelerationStructureToMemoryKHR(
+        Unwrap(device), VK_NULL_HANDLE, &unwrappedInfo);
+
+    if(ret != VK_SUCCESS)
+    {
+      SET_ERROR_RESULT(m_FailedReplayResult, ResultCode::APIReplayFailed,
+                       "Failed to copy acceleration structure to memory, VkResult: %s",
+                       ToStr(ret).c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+VkResult WrappedVulkan::vkCopyAccelerationStructureToMemoryKHR(
+    VkDevice device, VkDeferredOperationKHR deferredOperation,
+    const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+{
+  VkResult ret;
+  {
+    VkCopyAccelerationStructureToMemoryInfoKHR unwrappedInfo = *pInfo;
+    unwrappedInfo.src = Unwrap(unwrappedInfo.src);
+    SERIALISE_TIME_CALL(ret = ObjDisp(device)->CopyAccelerationStructureToMemoryKHR(
+                            Unwrap(device), VK_NULL_HANDLE, &unwrappedInfo));
+  }
+
+  if(ret == VK_SUCCESS && IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCopyAccelerationStructureKHR);
+      Serialise_vkCopyAccelerationStructureToMemoryKHR(ser, device, deferredOperation, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->src), eFrameRef_Read);
+  }
+
+  return ret;
+}
+
+template <typename SerialiserType>
+bool WrappedVulkan::Serialise_vkCopyMemoryToAccelerationStructureKHR(
+    SerialiserType &ser, VkDevice device, VkDeferredOperationKHR /*deferredOperation*/,
+    const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)
+{
+  SERIALISE_ELEMENT(device);
+  SERIALISE_ELEMENT_LOCAL(Info, *pInfo);
+
+  SERIALISE_CHECK_READ_ERRORS();
+
+  if(IsReplayingAndReading())
+  {
+    VkCopyMemoryToAccelerationStructureInfoKHR unwrappedInfo = Info;
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+
+    VkResult ret = ObjDisp(device)->CopyMemoryToAccelerationStructureKHR(
+        Unwrap(device), VK_NULL_HANDLE, &unwrappedInfo);
+
+    if(ret != VK_SUCCESS)
+    {
+      SET_ERROR_RESULT(m_FailedReplayResult, ResultCode::APIReplayFailed,
+                       "Failed to copy memory to acceleration structure, VkResult: %s",
+                       ToStr(ret).c_str());
+      return false;
+    }
+  }
+
+  return true;
+}
+
+VkResult WrappedVulkan::vkCopyMemoryToAccelerationStructureKHR(
+    VkDevice device, VkDeferredOperationKHR deferredOperation,
+    const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)
+{
+  VkResult ret;
+  {
+    VkCopyMemoryToAccelerationStructureInfoKHR unwrappedInfo = *pInfo;
+    unwrappedInfo.dst = Unwrap(unwrappedInfo.dst);
+    SERIALISE_TIME_CALL(ret = ObjDisp(device)->CopyMemoryToAccelerationStructureKHR(
+                            Unwrap(device), VK_NULL_HANDLE, &unwrappedInfo));
+  }
+
+  if(ret == VK_SUCCESS && IsActiveCapturing(m_State))
+  {
+    {
+      CACHE_THREAD_SERIALISER();
+
+      SCOPED_SERIALISE_CHUNK(VulkanChunk::vkCopyMemoryToAccelerationStructureKHR);
+      Serialise_vkCopyMemoryToAccelerationStructureKHR(ser, device, deferredOperation, pInfo);
+
+      m_FrameCaptureRecord->AddChunk(scope.Get());
+    }
+
+    GetResourceManager()->MarkResourceFrameReferenced(GetResID(pInfo->dst), eFrameRef_CompleteWrite);
+  }
+
+  return ret;
+}
+
+VkResult WrappedVulkan::vkWriteAccelerationStructuresPropertiesKHR(
+    VkDevice device, uint32_t accelerationStructureCount,
+    const VkAccelerationStructureKHR *pAccelerationStructures, VkQueryType queryType,
+    size_t dataSize, void *pData, size_t stride)
+{
+  byte *memory = GetTempMemory(sizeof(VkAccelerationStructureKHR) * accelerationStructureCount);
+  auto *unwrappedASes = reinterpret_cast<VkAccelerationStructureKHR *>(memory);
+  for(uint32_t i = 0; i < accelerationStructureCount; ++i)
+    unwrappedASes[i] = Unwrap(pAccelerationStructures[i]);
+
+  return ObjDisp(device)->WriteAccelerationStructuresPropertiesKHR(
+      Unwrap(device), accelerationStructureCount, unwrappedASes, queryType, dataSize, pData, stride);
+}
+
 INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCreateCommandPool, VkDevice device,
                                 const VkCommandPoolCreateInfo *pCreateInfo,
                                 const VkAllocationCallbacks *pAllocator, VkCommandPool *pCommandPool);
@@ -7733,3 +8395,36 @@ INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdBeginRendering, VkCommandBuffer comma
                                 const VkRenderingInfo *pRenderingInfo);
 
 INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdEndRendering, VkCommandBuffer commandBuffer);
+
+INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkBuildAccelerationStructuresKHR, VkDevice device,
+                                VkDeferredOperationKHR deferredOperation, uint32_t infoCount,
+                                const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+                                const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
+INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdBuildAccelerationStructuresIndirectKHR,
+                                VkCommandBuffer commandBuffer, uint32_t infoCount,
+                                const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+                                const VkDeviceAddress *pIndirectDeviceAddresses,
+                                const uint32_t *pIndirectStrides,
+                                const uint32_t *const *ppMaxPrimitiveCounts);
+INSTANTIATE_FUNCTION_SERIALISED(
+    void, vkCmdBuildAccelerationStructuresKHR, VkCommandBuffer commandBuffer, uint32_t infoCount,
+    const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+    const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
+INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdCopyAccelerationStructureKHR,
+                                VkCommandBuffer commandBuffer,
+                                const VkCopyAccelerationStructureInfoKHR *pInfo);
+INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdCopyAccelerationStructureToMemoryKHR,
+                                VkCommandBuffer commandBuffer,
+                                const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+INSTANTIATE_FUNCTION_SERIALISED(void, vkCmdCopyMemoryToAccelerationStructureKHR,
+                                VkCommandBuffer commandBuffer,
+                                const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)
+INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCopyAccelerationStructureKHR, VkDevice device,
+                                VkDeferredOperationKHR deferredOperation,
+                                const VkCopyAccelerationStructureInfoKHR *pInfo)
+INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCopyAccelerationStructureToMemoryKHR, VkDevice device,
+                                VkDeferredOperationKHR deferredOperation,
+                                const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo)
+INSTANTIATE_FUNCTION_SERIALISED(VkResult, vkCopyMemoryToAccelerationStructureKHR, VkDevice device,
+                                VkDeferredOperationKHR deferredOperation,
+                                const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo)

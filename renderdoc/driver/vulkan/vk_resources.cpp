@@ -142,6 +142,8 @@ VkResourceType IdentifyTypeByPtr(WrappedVkRes *ptr)
     return eResDescUpdateTemplate;
   if(WrappedVkSamplerYcbcrConversion::IsAlloc(ptr))
     return eResSamplerConversion;
+  if(WrappedVkAccelerationStructureKHR::IsAlloc(ptr))
+    return eResAccelerationStructureKHR;
 
   RDCERR("Unknown type for ptr 0x%p", ptr);
 

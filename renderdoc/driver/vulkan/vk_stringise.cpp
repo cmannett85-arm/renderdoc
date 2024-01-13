@@ -28,7 +28,7 @@
 template <>
 rdcstr DoStringise(const VulkanChunk &el)
 {
-  RDCCOMPILE_ASSERT((uint32_t)VulkanChunk::Max == 1201, "Chunks changed without updating names");
+  RDCCOMPILE_ASSERT((uint32_t)VulkanChunk::Max == 1211, "Chunks changed without updating names");
 
   BEGIN_ENUM_STRINGISE(VulkanChunk)
   {
@@ -233,6 +233,16 @@ rdcstr DoStringise(const VulkanChunk &el)
     STRINGISE_ENUM_CLASS(vkCmdDrawMeshTasksEXT)
     STRINGISE_ENUM_CLASS(vkCmdDrawMeshTasksIndirectEXT)
     STRINGISE_ENUM_CLASS(vkCmdDrawMeshTasksIndirectCountEXT)
+    STRINGISE_ENUM_CLASS(vkBuildAccelerationStructuresKHR)
+    STRINGISE_ENUM_CLASS(vkCmdBuildAccelerationStructuresIndirectKHR)
+    STRINGISE_ENUM_CLASS(vkCmdBuildAccelerationStructuresKHR)
+    STRINGISE_ENUM_CLASS(vkCmdCopyAccelerationStructureKHR)
+    STRINGISE_ENUM_CLASS(vkCmdCopyAccelerationStructureToMemoryKHR)
+    STRINGISE_ENUM_CLASS(vkCmdCopyMemoryToAccelerationStructureKHR)
+    STRINGISE_ENUM_CLASS(vkCopyAccelerationStructureKHR)
+    STRINGISE_ENUM_CLASS(vkCopyAccelerationStructureToMemoryKHR)
+    STRINGISE_ENUM_CLASS(vkCopyMemoryToAccelerationStructureKHR)
+    STRINGISE_ENUM_CLASS(vkCreateAccelerationStructureKHR)
     STRINGISE_ENUM_CLASS_NAMED(Max, "Max Chunk");
   }
   END_ENUM_STRINGISE()
