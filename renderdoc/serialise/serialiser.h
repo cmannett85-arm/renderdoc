@@ -1408,10 +1408,8 @@ public:
   }
 
   template <typename U>
-  void SerialiseValue(SDBasic type, size_t byteSize, rdcarray<U> &el)
+  void SerialiseArrayValue(SDBasic type, rdcarray<U> &el)
   {
-    RDCASSERT(type == SDBasic::Array);
-
     uint64_t size = (uint64_t)el.size();
     {
       m_InternalElement++;
@@ -1665,6 +1663,7 @@ public:
 
 #define BASIC_TYPE_SERIALISE(typeName, member, type, byteSize) \
   DECLARE_STRINGISE_TYPE(typeName)                             \
+  DECLARE_STRINGISE_TYPE(rdcarray<typeName>)                   \
   template <class SerialiserType>                              \
   void DoSerialise(SerialiserType &ser, typeName &el)          \
   {                                                            \
@@ -1737,6 +1736,12 @@ template <class SerialiserType>
 void DoSerialise(SerialiserType &ser, rdcinflexiblestr &el)
 {
   ser.SerialiseValue(SDBasic::String, 0, el);
+}
+
+template <class SerialiserType, typename U>
+void DoSerialise(SerialiserType &ser, rdcarray<U> &el)
+{
+  ser.SerialiseArrayValue(SDBasic::Array, el);
 }
 
 DECLARE_STRINGISE_TYPE(SDObject *);

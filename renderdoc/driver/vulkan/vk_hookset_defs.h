@@ -980,12 +980,16 @@
   HookInitExtension(KHR_deferred_host_operations, DestroyDeferredOperationKHR);                    \
   HookInitExtension(KHR_deferred_host_operations, GetDeferredOperationMaxConcurrencyKHR);          \
   HookInitExtension(KHR_deferred_host_operations, GetDeferredOperationResultKHR);                  \
+  HookInitExtension(KHR_acceleration_structure, BuildAccelerationStructuresKHR);                   \
   HookInitExtension(KHR_acceleration_structure, CmdBuildAccelerationStructuresIndirectKHR);        \
   HookInitExtension(KHR_acceleration_structure, CmdBuildAccelerationStructuresKHR);                \
   HookInitExtension(KHR_acceleration_structure, CmdCopyAccelerationStructureKHR);                  \
   HookInitExtension(KHR_acceleration_structure, CmdCopyAccelerationStructureToMemoryKHR);          \
   HookInitExtension(KHR_acceleration_structure, CmdCopyMemoryToAccelerationStructureKHR);          \
   HookInitExtension(KHR_acceleration_structure, CmdWriteAccelerationStructuresPropertiesKHR);      \
+  HookInitExtension(KHR_acceleration_structure, CopyAccelerationStructureKHR);                     \
+  HookInitExtension(KHR_acceleration_structure, CopyAccelerationStructureToMemoryKHR);             \
+  HookInitExtension(KHR_acceleration_structure, CopyMemoryToAccelerationStructureKHR);             \
   HookInitExtension(KHR_acceleration_structure, CreateAccelerationStructureKHR);                   \
   HookInitExtension(KHR_acceleration_structure, DestroyAccelerationStructureKHR);                  \
   HookInitExtension(KHR_acceleration_structure, GetAccelerationStructureBuildSizesKHR);            \
@@ -1804,6 +1808,10 @@
               VkDeferredOperationKHR, operation);                                                    \
   HookDefine2(VkResult, vkGetDeferredOperationResultKHR, VkDevice, device, VkDeferredOperationKHR,   \
               operation);                                                                            \
+  HookDefine5(VkResult, vkBuildAccelerationStructuresKHR, VkDevice, device,                          \
+              VkDeferredOperationKHR, deferredOperation, uint32_t, infoCount,                        \
+              const VkAccelerationStructureBuildGeometryInfoKHR *, pInfos,                           \
+              const VkAccelerationStructureBuildRangeInfoKHR *const *, ppBuildRangeInfos);           \
   HookDefine6(void, vkCmdBuildAccelerationStructuresIndirectKHR, VkCommandBuffer, commandBuffer,     \
               uint32_t, infoCount, const VkAccelerationStructureBuildGeometryInfoKHR *, pInfos,      \
               const VkDeviceAddress *, pIndirectDeviceAddresses, const uint32_t *,                   \
@@ -1821,6 +1829,14 @@
               uint32_t, accelerationStructureCount, const VkAccelerationStructureKHR *,              \
               pAccelerationStructures, VkQueryType, queryType, VkQueryPool, queryPool, uint32_t,     \
               firstQuery);                                                                           \
+  HookDefine3(VkResult, vkCopyAccelerationStructureKHR, VkDevice, device, VkDeferredOperationKHR,    \
+              deferredOperation, const VkCopyAccelerationStructureInfoKHR *, pInfo);                 \
+  HookDefine3(VkResult, vkCopyAccelerationStructureToMemoryKHR, VkDevice, device,                    \
+              VkDeferredOperationKHR, deferredOperation,                                             \
+              const VkCopyAccelerationStructureToMemoryInfoKHR *, pInfo);                            \
+  HookDefine3(VkResult, vkCopyMemoryToAccelerationStructureKHR, VkDevice, device,                    \
+              VkDeferredOperationKHR, deferredOperation,                                             \
+              const VkCopyMemoryToAccelerationStructureInfoKHR *, pInfo);                            \
   HookDefine4(VkResult, vkCreateAccelerationStructureKHR, VkDevice, device,                          \
               const VkAccelerationStructureCreateInfoKHR *, pCreateInfo,                             \
               const VkAllocationCallbacks *, pAllocator, VkAccelerationStructureKHR *,               \

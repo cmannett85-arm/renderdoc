@@ -1016,14 +1016,6 @@ TEST_CASE("Read/write container types", "[serialiser][structured]")
   delete buf;
 };
 
-DECLARE_REFLECTION_STRUCT(rdcarray<int>);
-
-template <class SerialiserType>
-void DoSerialise(SerialiserType &ser, rdcarray<int> &el)
-{
-  ser.SerialiseValue(SDBasic::Array, sizeof(int) * el.size(), el);
-}
-
 TEST_CASE("Read/write container of container types", "[serialiser][structured]")
 {
   StreamWriter *buf = new StreamWriter(StreamWriter::DefaultScratchSize);
@@ -1036,9 +1028,9 @@ TEST_CASE("Read/write container of container types", "[serialiser][structured]")
 
       rdcarray<rdcarray<int>> v;
 
-      v.push_back(rdcarray<int>{1, 2, 3});
-      v.push_back(rdcarray<int>{4, 5});
-      v.push_back(rdcarray<int>{6, 7, 8, 9});
+      v.push_back({1, 2, 3});
+      v.push_back({4, 5});
+      v.push_back({6, 7, 8, 9});
 
       SERIALISE_ELEMENT(v);
     }

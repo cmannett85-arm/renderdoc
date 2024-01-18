@@ -11529,19 +11529,6 @@ void Deserialise(const VkAccelerationStructureBuildGeometryInfoKHR &el)
   delete[] el.ppGeometries;
 }
 
-template <class SerialiserType>
-void DoSerialise(SerialiserType &ser, rdcarray<VkAccelerationStructureBuildRangeInfoKHR> &el)
-{
-  ser.SerialiseValue(SDBasic::Array, sizeof(VkAccelerationStructureBuildRangeInfoKHR) * el.size(),
-                     el);
-}
-
-template <class SerialiserType>
-void DoSerialise(SerialiserType &ser, rdcarray<uint32_t> &el)
-{
-  ser.SerialiseValue(SDBasic::Array, sizeof(uint32_t) * el.size(), el);
-}
-
 template <typename SerialiserType>
 void DoSerialise(SerialiserType &ser, VkAccelerationStructureBuildRangeInfoKHR &el)
 {
@@ -12381,9 +12368,6 @@ INSTANTIATE_SERIALISE_TYPE(VkVertexInputBindingDescription);
 INSTANTIATE_SERIALISE_TYPE(VkVertexInputBindingDivisorDescriptionEXT);
 INSTANTIATE_SERIALISE_TYPE(VkViewport);
 INSTANTIATE_SERIALISE_TYPE(VkXYColorEXT);
-
-INSTANTIATE_SERIALISE_TYPE(rdcarray<VkAccelerationStructureBuildRangeInfoKHR>);
-INSTANTIATE_SERIALISE_TYPE(rdcarray<uint32_t>);
 
 INSTANTIATE_SERIALISE_TYPE(DescriptorSetSlot);
 INSTANTIATE_SERIALISE_TYPE(ImageRegionState);

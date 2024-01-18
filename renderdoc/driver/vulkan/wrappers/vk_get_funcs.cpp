@@ -1173,6 +1173,10 @@ void WrappedVulkan::vkGetAccelerationStructureBuildSizesKHR(
     const VkAccelerationStructureBuildGeometryInfoKHR *pBuildInfo,
     const uint32_t *pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR *pSizeInfo)
 {
+  VkAccelerationStructureBuildGeometryInfoKHR unwrapped = *pBuildInfo;
+  unwrapped.srcAccelerationStructure = Unwrap(unwrapped.srcAccelerationStructure);
+  unwrapped.dstAccelerationStructure = Unwrap(unwrapped.dstAccelerationStructure);
+
   ObjDisp(device)->GetAccelerationStructureBuildSizesKHR(Unwrap(device), buildType, pBuildInfo,
                                                          pMaxPrimitiveCounts, pSizeInfo);
 }
@@ -1189,6 +1193,5 @@ void WrappedVulkan::vkGetDeviceAccelerationStructureCompatibilityKHR(
     VkDevice device, const VkAccelerationStructureVersionInfoKHR *pVersionInfo,
     VkAccelerationStructureCompatibilityKHR *pCompatibility)
 {
-  ObjDisp(device)->GetDeviceAccelerationStructureCompatibilityKHR(Unwrap(device), pVersionInfo,
-                                                                  pCompatibility);
+  *pCompatibility = VK_ACCELERATION_STRUCTURE_COMPATIBILITY_INCOMPATIBLE_KHR;
 }

@@ -1977,9 +1977,8 @@ DECLARE_REFLECTION_STRUCT(VkVertexInputBindingDivisorDescriptionEXT);
 DECLARE_REFLECTION_STRUCT(VkViewport);
 DECLARE_REFLECTION_STRUCT(VkXYColorEXT);
 
-// Array serialisation
-DECLARE_REFLECTION_STRUCT(rdcarray<VkAccelerationStructureBuildRangeInfoKHR>);
-DECLARE_REFLECTION_STRUCT(rdcarray<uint32_t>);
+// rdcarray serialisation is generic but the stringification is not
+DECLARE_STRINGISE_TYPE(rdcarray<VkAccelerationStructureBuildRangeInfoKHR>);
 
 DECLARE_DESERIALISE_TYPE(VkDescriptorSetLayoutBinding);
 DECLARE_DESERIALISE_TYPE(VkPresentRegionKHR);

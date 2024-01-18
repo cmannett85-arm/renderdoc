@@ -2809,6 +2809,10 @@ public:
   VkResult vkGetDeferredOperationResultKHR(VkDevice device, VkDeferredOperationKHR operation);
 
   // VK_KHR_acceleration_structure
+  VkResult vkBuildAccelerationStructuresKHR(
+      VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount,
+      const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
+      const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
   IMPLEMENT_FUNCTION_SERIALISED(void, vkCmdBuildAccelerationStructuresIndirectKHR,
                                 VkCommandBuffer commandBuffer, uint32_t infoCount,
                                 const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
@@ -2819,6 +2823,14 @@ public:
       void, vkCmdBuildAccelerationStructuresKHR, VkCommandBuffer commandBuffer, uint32_t infoCount,
       const VkAccelerationStructureBuildGeometryInfoKHR *pInfos,
       const VkAccelerationStructureBuildRangeInfoKHR *const *ppBuildRangeInfos);
+  VkResult vkCopyAccelerationStructureKHR(VkDevice device, VkDeferredOperationKHR deferredOperation,
+                                          const VkCopyAccelerationStructureInfoKHR *pInfo);
+  VkResult vkCopyAccelerationStructureToMemoryKHR(
+      VkDevice device, VkDeferredOperationKHR deferredOperation,
+      const VkCopyAccelerationStructureToMemoryInfoKHR *pInfo);
+  VkResult vkCopyMemoryToAccelerationStructureKHR(
+      VkDevice device, VkDeferredOperationKHR deferredOperation,
+      const VkCopyMemoryToAccelerationStructureInfoKHR *pInfo);
   IMPLEMENT_FUNCTION_SERIALISED(void, vkCmdCopyAccelerationStructureKHR,
                                 VkCommandBuffer commandBuffer,
                                 const VkCopyAccelerationStructureInfoKHR *pInfo);

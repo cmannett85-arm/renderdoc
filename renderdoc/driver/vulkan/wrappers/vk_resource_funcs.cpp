@@ -3175,7 +3175,7 @@ bool WrappedVulkan::Serialise_vkCreateAccelerationStructureKHR(
       }
     }
 
-    AddResource(AccelerationStructure, ResourceType::Buffer, "AccelerationStructure");
+    AddResource(AccelerationStructure, ResourceType::AccelerationStructure, "AccelerationStructure");
     DerivedResource(device, AccelerationStructure);
     DerivedResource(CreateInfo.buffer, AccelerationStructure);
   }
@@ -3224,7 +3224,7 @@ VkResult WrappedVulkan::vkCreateAccelerationStructureKHR(
       record->resInfo = bufferRecord->resInfo;
       record->storable = bufferRecord->storable;
       record->memOffset = bufferRecord->memOffset + pCreateInfo->offset;
-      record->memSize = bufferRecord->memSize - pCreateInfo->offset;
+      record->memSize = pCreateInfo->size;
     }
     else
     {
