@@ -553,7 +553,8 @@
   DeclExt(EXT_mesh_shader);                            \
   DeclExt(EXT_scalar_block_layout);                    \
   DeclExt(KHR_deferred_host_operations);               \
-  DeclExt(KHR_acceleration_structure);
+  DeclExt(KHR_acceleration_structure);                 \
+  DeclExt(KHR_ray_query);
 
 // for simplicity and since the check itself is platform agnostic,
 // these aren't protected in platform defines
@@ -677,7 +678,8 @@
   CheckExt(EXT_mesh_shader, VKXX);                            \
   CheckExt(EXT_scalar_block_layout, VK12);                    \
   CheckExt(KHR_deferred_host_operations, VKXX);               \
-  CheckExt(KHR_acceleration_structure, VKXX);
+  CheckExt(KHR_acceleration_structure, VKXX);                 \
+  CheckExt(KHR_ray_query, VKXX);
 
 #define HookInitVulkanInstanceExts_PhysDev()                                                         \
   HookInitExtension(KHR_surface, GetPhysicalDeviceSurfaceSupportKHR);                                \
