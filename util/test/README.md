@@ -43,6 +43,7 @@ Then running the tests means invoking `run_tests.py` with any options you need:
 * `--data-extra` the path to the extra data folder. Some tests may reference captures which can't be committed to the repository here and are distributed separately or added custom by the user. By default refers to `data_extra/` here next to the script.
 * `--demos-binary` the path to the built demos binary.
 * `--adb-device` the ADB device to run the tests on, instead of the host.  If set, --demos-binary is expected to be the demo APK
+* `--fork` runs the test under a fork within the test app (Linux only)
 
 **NOTE:** When run, the temporary and artifacts folders will be erased.
 
