@@ -584,6 +584,22 @@ RDResult InstallRenderDocServer(const rdcstr &deviceID)
           result = ResultCode::AndroidAPKVerifyFailed;
         }
       }
+
+      if(result != ResultCode::AndroidAPKVerifyFailed)
+      {
+        // attempt to set the APK permissions so user interaction isn't needed, but don't fail the
+        // server start if it fails
+        const rdcstr sdcard_perm =
+            apiVersion >= 30 ? "MANAGE_EXTERNAL_STORAGE" : "WRITE_EXTERNAL_STORAGE";
+        Process::ProcessResult adbPerms =
+            adbExecCommand(deviceID, "shell appops set --uid " + GetRenderDocPackageForABI(abi) +
+                                         " " + sdcard_perm + " allow");
+        if(adbPerms.retCode != EXIT_SUCCESS)
+        {
+          RDCWARN("Failed to set APK permissions. stdout: %s, stderr: %s",
+                  adbPerms.strStdout.trimmed().c_str(), adbPerms.strStderror.trimmed().c_str());
+        }
+      }
     }
   }
 
@@ -1214,21 +1230,6 @@ struct AndroidController : public IDeviceProtocolHandler
           RDCERR("Failed to install RenderDoc server app");
           return;
         }
-      }
-
-      // stop all servers of any ABI
-      for(Android::ABI abi : abis)
-        Android::adbExecCommand(deviceID, "shell am force-stop " + GetRenderDocPackageForABI(abi));
-
-      // Attempt to prevent the user needing to click through on permissions
-      rdcstr auto_grant_permissions =
-          Android::adbExecCommand(deviceID, "shell getprop debug.renderdoc.autograntpermissions")
-              .strStdout.trimmed();
-      if(apiVersion >= 30 && atoi(auto_grant_permissions.c_str()) == 1)
-      {
-        for(Android::ABI abi : abis)
-          Android::adbExecCommand(deviceID, "shell pm grant " + GetRenderDocPackageForABI(abi) +
-                                                " android.permission.MANAGE_EXTERNAL_STORAGE");
       }
 
       Android::adbForwardPorts(dev.portbase, deviceID, 0, 0, false);
