@@ -19,14 +19,14 @@ parser.add_argument('--in-process',
                     help="Run test code in the same process as test runner", action="store_true")
 parser.add_argument('--slow-tests',
                     help="Run potentially slow tests", action="store_true")
-parser.add_argument('--test-timeout',
-                    help="Timeout for output from tests", default=90, type=int)
 parser.add_argument('--data', default=os.path.join(script_dir, "data"),
                     help="The folder that reference data is in. Will not be modified.", type=str)
 parser.add_argument('--demos-binary', default="",
                     help="The path to the built demos binary.", type=str)
 parser.add_argument('--demos-timeout', default=None,
                     help="The timeout to use when expecting the demos to run.", type=int)
+parser.add_argument('--runner-timeout', default=600,
+                    help="The timeout to use when expecting output from the test runner", type=int)
 parser.add_argument('--data-extra', default=os.path.join(script_dir, "data_extra"),
                     help="The folder that extra reference data is in (typically very large captures that aren't part "
                          "of the normal repo). Will not be modified.", type=str)
@@ -36,6 +36,16 @@ parser.add_argument('--temp', default=os.path.join(script_dir, "tmp"),
                     help="The folder to put temporary run data in. Will be completely cleared.", type=str)
 parser.add_argument('--debugger',
                     help="Enable debugger mode, exceptions are not caught by the framework.", action="store_true")
+parser.add_argument('--adb-device', required=False,
+                    help="Use the specified ADB device to run the tests.", type=str)
+parser.add_argument('--remote-host', required=False,
+                    help="Use the specified remote device to run the tests.", type=str)
+parser.add_argument('--port', required=False, default="22",
+                    help="Port to use for ssh/scp to remote host", type=str)
+parser.add_argument('--shell', required=False, default='bash', type=str, help='Shell to use for SSH commands, defaults to Bash')
+parser.add_argument('--renderdoccmd', required=False, default=os.path.join(script_dir, '..', '..', '..', 'build-host'),
+                    help="Renderdoccmd executable location", type=str)
+parser.add_argument('--fork', required=False, action='store_true', help='Runs the test under a fork within the test app (Linux only)')
 # Internal command, when we fork out to run a test in a separate process
 parser.add_argument('--internal_run_test', help=argparse.SUPPRESS, type=str, required=False)
 # Internal command, when we re-run as admin to register vulkan layer
@@ -89,6 +99,10 @@ demos_binary = args.demos_binary
 if demos_binary != "":
     demos_binary = os.path.realpath(demos_binary)
 demos_timeout = args.demos_timeout
+runner_timeout = args.runner_timeout
+demo_fork = ''
+if args.fork:
+    demo_fork = ' --fork '
 
 os.chdir(sys.path[0])
 
@@ -127,7 +141,19 @@ rdtest.set_data_extra_dir(data_extra_path)
 rdtest.set_temp_dir(temp_path)
 rdtest.set_demos_binary(demos_binary)
 rdtest.set_demos_timeout(demos_timeout)
+rdtest.set_demos_fork(demo_fork)
+rdtest.set_runner_timeout(runner_timeout)
+rdtest.set_shell(args.shell)
 
+if args.renderdoccmd:
+    rdtest.set_renderdoccmd_dir(args.renderdoccmd)
+
+if args.adb_device:
+    rdtest.create_adb_device(args.adb_device)
+elif args.remote_host:
+    rdtest.create_remote_device(args.remote_host, args.port)
+else:
+    rdtest.set_remote_server(None)
 # debugger option implies in-process test running
 if args.debugger:
     args.in_process = True
@@ -139,4 +165,4 @@ elif args.internal_remote_server:
 elif args.internal_run_test is not None:
     rdtest.internal_run_test(args.internal_run_test)
 else:
-    rdtest.run_tests(args.test_include, args.test_exclude, args.in_process, args.slow_tests, args.debugger, args.test_timeout)
+    rdtest.run_tests(args.test_include, args.test_exclude, args.in_process, args.slow_tests, args.debugger)

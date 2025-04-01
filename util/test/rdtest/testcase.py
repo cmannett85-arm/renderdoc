@@ -236,11 +236,18 @@ class TestCase:
         """
 
         if self.demos_test_name != '':
-            logfile = os.path.join(util.get_tmp_dir(), 'demos.log')
+            logfile = os.path.join(util.get_tmp_dir(), util.get_current_test(), 'demos.log')
+            remote_logfile = logfile
+            exe = util.get_demos_binary()
+            if util.get_remote_server() is not None:
+                remote_logfile = util.get_remote_server().get_temp_path('demos.log')
+                exe = util.get_remote_server().get_demos_exe()
+
             timeout = self.demos_timeout
             if timeout is None:
                 timeout = util.get_demos_timeout()
-            return capture.run_and_capture(util.get_demos_binary(), self.demos_test_name + " --log " + logfile,
+            return capture.run_and_capture(exe,
+                                           self.demos_test_name + util.get_demos_fork() + " --log " + remote_logfile,
                                            self.demos_frame_cap, frame_count=self.demos_frame_count,
                                            captures_expected=self.demos_captures_expected, logfile=logfile,
                                            opts=self.get_capture_options(), timeout=timeout)
@@ -462,14 +469,19 @@ class TestCase:
             if type(y) is float:
                 y = int(((tex_details.height >> sub.mip) - 1) * y)
 
+            if cast == rd.CompType.Typeless:
+                cast = tex_details.format.compType
             if cast == rd.CompType.Typeless and tex_details.creationFlags & rd.TextureCategory.SwapBuffer:
                 cast = rd.CompType.UNormSRGB
 
             # Reduce epsilon for RGBA8 textures if it's not already reduced
             if tex_details.format.compByteWidth == 1 and eps == util.FLT_EPSILON:
                 eps = (1.0 / 255.0)
-            if tex_details.format.compByteWidth == 2 and eps == util.FLT_EPSILON:
+            elif tex_details.format.compByteWidth == 2 and eps == util.FLT_EPSILON:
                 eps = (1.0 / 16384.0)
+            # Also for the default Android framebuffer format
+            elif tex_details.format.type == 12 and eps == util.FLT_EPSILON:
+                eps = (1.0 / 1024.0)
 
         picked: rd.PixelValue = self.controller.PickPixel(tex, x, y, sub, cast)
 
@@ -500,6 +512,29 @@ class TestCase:
             name = res_details.name
 
         log.success("Picked value at {},{} in {} is as expected".format(x, y, name))
+
+    def screen_crop_coords(self, out = None):
+        pipe: rd.PipeState = self.controller.GetPipelineState()
+        vp: rd.Viewport = pipe.GetViewport(0)
+
+        # if no output is specified, check the current colour output at this action
+        if out is None:
+            out = pipe.GetOutputTargets()[0].resourceId
+
+        # If the image buffer is larger than the viewport, crop it such that the new coordinates
+        # map to the bottom-left of the image (i.e. OpenGL origin)
+        tex_details = self.get_texture(out)
+        if (tex_details.width <= vp.width) or (tex_details.height <= vp.height):
+            return (0.0, 0.0, float(tex_details.width), float(tex_details.height))
+
+        t_width = float(min(tex_details.width, vp.width))
+        t_height = float(min(tex_details.height, vp.height))
+
+        y = 0.0
+        if tex_details.height > vp.height:
+            y = tex_details.height - vp.height
+
+        return (0.0, y, t_width, t_height)
 
     def check_triangle(self, out = None, back = None, fore = None, vp = None):
         pipe: rd.PipeState = self.controller.GetPipelineState()
@@ -533,7 +568,7 @@ class TestCase:
     def run(self):
         self.capture_filename = self.get_capture()
 
-        self.check(os.path.exists(self.capture_filename), "Didn't generate capture in make_capture")
+        self.check(util.path_exists(self.capture_filename), "Didn't generate capture in make_capture")
 
         log.print("Loading capture")
 
@@ -545,13 +580,16 @@ class TestCase:
         self.check_capture()
 
         if self.controller is not None:
-            self.controller.Shutdown()
+            if not util.get_remote_server() is None:
+                util.get_remote_server().remote.CloseCapture(self.controller)
+            else:
+                self.controller.Shutdown()
 
     def invoketest(self, debugMode):
         start_time = self.get_time()
         self.run()
         duration = self.get_time() - start_time
-        log.print("Test ran in {}".format(duration))
+        log.print("Test {} ran in {}".format(self.demos_test_name, duration))
         self.debugMode = debugMode
 
     def get_first_action(self):
@@ -791,7 +829,18 @@ class TestCase:
 
         return processed
 
+    def retrieve_capture(self):
+        if util.get_remote_server() is None:
+            return self.capture_filename
+
+        dest = util.get_tmp_path(self.capture_filename.split('/')[-1])
+        log.print("Copying remote capture from '{}' to '{}'".format(self.capture_filename, dest))
+        util.get_remote_server().remote.CopyCaptureFromRemote(self.capture_filename, dest, None)
+        return dest
+
     def check_export(self, capture_filename):
+        capture_filename = self.retrieve_capture()
+
         recomp_path = util.get_tmp_path('recompressed.rdc')
         conv_zipxml_path = util.get_tmp_path('conv.zip.xml')
         conv_path = util.get_tmp_path('conv.rdc')
