@@ -590,6 +590,10 @@ void StopAtMainInChild()
     RDCLOG("Resumed after SIGSTOP");
 }
 
+void LateStopAtMainInChild()
+{
+}
+
 void ResumeProcess(pid_t childPid, uint32_t delaySeconds)
 {
   if(!ptrace_scope_ok())

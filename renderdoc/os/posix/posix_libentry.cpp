@@ -26,6 +26,7 @@
 #include "hooks/hooks.h"
 #include "os/os_specific.h"
 
+void LateStopAtMainInChild();
 void ResetHookingEnvVars();
 
 // DllMain equivalent
@@ -77,6 +78,10 @@ void library_loaded()
     // we have a short sleep here to allow target control to connect, since unlike windows we can't
     // suspend the process during startup.
     Threading::Sleep(15);
+
+    // Halt here if semaphores or lock files are being used to early halt child processes,
+    // no-op otherwise
+    LateStopAtMainInChild();
   }
 }
 

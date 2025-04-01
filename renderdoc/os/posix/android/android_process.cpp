@@ -25,8 +25,11 @@
 #include <unistd.h>
 #include "common/common.h"
 #include "common/formatting.h"
+#include "core/settings.h"
 #include "os/os_specific.h"
 #include "strings/string_utils.h"
+
+RDOC_EXTERN_CONFIG(uint32_t, Android_MaxConnectTimeout);
 
 extern char **environ;
 
@@ -105,6 +108,20 @@ void StopAtMainInChild()
 bool StopChildAtMain(pid_t childPid, bool *exitWithNoExec)
 {
   return false;
+}
+
+void LateStopAtMainInChild()
+{
+  const uint64_t start = Timing::GetUnixTimestamp();
+  const rdcstr lock = FileIO::GetAppFolderFilename("rd.lock");
+
+  while(FileIO::exists(lock) && ((Timing::GetUnixTimestamp() - start) < Android_MaxConnectTimeout()))
+  {
+    Threading::Sleep(100);
+  }
+
+  // Leave a moment to receive any queued capture messages
+  Threading::Sleep(5000);
 }
 
 void ResumeProcess(pid_t childPid, uint32_t delay)

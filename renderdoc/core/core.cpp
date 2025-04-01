@@ -1372,6 +1372,10 @@ bool RenderDoc::ShouldTriggerCapture(uint32_t frameNumber)
     {
       // we want to capture the next frame
       ret = true;
+
+      // Keep it in the queue in case the API wrapper gets replaced before the frame starts
+      // (occurs on Android), it will be removed when called on the next frame
+      m_QueuedFrameCaptures.push_back(*it);
     }
     else
     {

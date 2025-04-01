@@ -1544,6 +1544,11 @@ ExecuteResult AndroidRemoteServer::ExecuteAndInject(const rdcstr &packageAndActi
     RDCLOG("Launching package '%s' with activity '%s' and intent args '%s'", packageName.c_str(),
            activityName.c_str(), intentArgs.c_str());
 
+    // Create a file lock to halt the target before it starts rendering
+    Android::adbExecCommand(m_deviceID,
+                            StringFormat::Fmt("shell touch /sdcard/Android/%s%s/files/rd.lock",
+                                              folderName.c_str(), processName.c_str()));
+
     if(hookWithJDWP)
     {
       RDCLOG("Setting up to launch the application as a debugger to inject.");
@@ -1642,6 +1647,11 @@ ExecuteResult AndroidRemoteServer::ExecuteAndInject(const rdcstr &packageAndActi
       Threading::Sleep(1000);
       elapsed += 1000;
     }
+
+    // Release the file lock so the target can continue, or for clean up in event of failure
+    Android::adbExecCommand(m_deviceID,
+                            StringFormat::Fmt("shell rm /sdcard/Android/%s%s/files/rd.lock",
+                                              folderName.c_str(), processName.c_str()));
 
     // we leave the setprop in case the application later initialises a vulkan device. It's
     // impossible to tell if it will or not, since many applications will init and present from GLES

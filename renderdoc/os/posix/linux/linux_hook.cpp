@@ -100,6 +100,7 @@ void GetUnhookedEnvp(char *const *envp, rdcstr &envpStr, rdcarray<char *> &modif
 void GetHookedEnvp(char *const *envp, rdcstr &envpStr, rdcarray<char *> &modifiedEnv);
 void ResetHookingEnvVars();
 void StopAtMainInChild();
+void LateStopAtMainInChild();
 bool StopChildAtMain(pid_t childPid, bool *exitWithNoExec);
 void ResumeProcess(pid_t childPid, uint32_t delay = 0);
 int direct_setenv(const char *name, const char *value, int overwrite);

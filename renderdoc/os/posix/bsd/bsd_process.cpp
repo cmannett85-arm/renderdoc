@@ -168,6 +168,10 @@ bool StopChildAtMain(pid_t childPid, bool *exitWithNoExec)
   return false;
 }
 
+void LateStopAtMainInChild()
+{
+}
+
 void ResumeProcess(pid_t childPid, uint32_t delay)
 {
 }
