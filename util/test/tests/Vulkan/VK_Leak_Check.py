@@ -9,7 +9,8 @@ class VK_Leak_Check(rdtest.TestCase):
     demos_timeout = 120
 
     def __init__(self):
-        if not rdtest.util.get_remote_server() is None:
+        if not rdtest.util.get_remote_server() is None and \
+            isinstance(rdtest.util.get_remote_server(), rdtest.remoteserver.AndroidRemoteServer):
             # Reduce from the original 50000 as Android displays are typically V-synced at 60fps,
             # so 50000 frames is ~15mins - we're not waiting that long.  But we don't need to as
             # on Android the backbuffer is fullscreen so leaks affect consumption much faster than

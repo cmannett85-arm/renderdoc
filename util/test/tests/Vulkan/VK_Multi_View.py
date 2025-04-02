@@ -9,9 +9,7 @@ class VK_Multi_View(rdtest.TestCase):
             rdtest.log.success("Shader debugging not enabled, skipping test")
             return
 
-        x = 200
-        y = 150
-
+        passed = True
         for test_name in ["Vertex: viewIndex", "Geometry: viewIndex", "Fragment: viewIndex", "No viewIndex"]:
             rdtest.log.print("Test {}".format(test_name))
             action: rd.ActionDescription = self.find_action(test_name).next
@@ -20,6 +18,10 @@ class VK_Multi_View(rdtest.TestCase):
             pipe: rd.PipeState = self.controller.GetPipelineState()
             if not pipe.GetShaderReflection(rd.ShaderStage.Pixel).debugInfo.debuggable:
                 raise rdtest.TestFailureException("Test {} shader can not be debugged".format(test_name))
+            
+            vp = self.screen_crop_coords(pipe.GetOutputTargets()[0].resource)
+            x = int(vp[2] * 0.5)
+            y = int(vp[3] * 0.5)
 
             for view in range(2):
                 # Debug the pixel shader
@@ -28,7 +30,16 @@ class VK_Multi_View(rdtest.TestCase):
                 trace: rd.ShaderDebugTrace = self.controller.DebugPixel(x, y, inputs)
                 if trace.debugger is None:
                     self.controller.FreeTrace(trace)
-                    raise rdtest.TestFailureException("Test {} view {} did not debug at all".format(test_name, view))
+
+                    save_data = rd.TextureSave()
+                    save_data.resourceId = pipe.GetOutputTargets()[0].resource
+                    save_data.destType = rd.FileType.PNG
+                    path = rdtest.get_tmp_path(f"{test_name}_view{view}.png")
+                    self.controller.SaveTexture(save_data, path)
+
+                    rdtest.log.print("Test {} view {} did not debug at all".format(test_name, view))
+                    passed = False
+                    continue
 
                 cycles, variables = self.process_trace(trace)
                 output: rd.SourceVariableMapping = self.find_output_source_var(trace, rd.ShaderBuiltin.ColorOutput, 0)
@@ -44,6 +55,9 @@ class VK_Multi_View(rdtest.TestCase):
                     idx = vtx
                     self.check_debug(vtx, idx, inst, view, postvs)
                 rdtest.log.print(f"View {view} Slice {slice} passed")
+
+        if not passed:
+            raise rdtest.TestFailureException("Test failed")
 
         rdtest.log.success("All tests matched")
 

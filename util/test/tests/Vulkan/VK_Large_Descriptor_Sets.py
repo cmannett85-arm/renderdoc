@@ -10,7 +10,7 @@ class VK_Large_Descriptor_Sets(rdtest.TestCase):
     def run(self):
         self.capture_filename = self.get_capture()
 
-        self.check(util.path_exists(self.capture_filename), "Didn't generate capture in make_capture")
+        self.check(rdtest.util.path_exists(self.capture_filename), "Didn't generate capture in make_capture")
 
         rdtest.log.print("Loading capture")
 
@@ -26,7 +26,12 @@ class VK_Large_Descriptor_Sets(rdtest.TestCase):
 
         rdtest.log.print("Loaded capture in {} seconds, consuming {} bytes of memory".format(duration, memory_increase))
 
-        if memory_increase > 2000*1000*1000:
+        test_limit = 2000*1000*1000
+        if not rdtest.util.get_remote_server() is None and \
+            isinstance(rdtest.util.get_remote_server(), rdtest.remoteserver.AndroidRemoteServer):
+            test_limit = 400*1000*1000
+
+        if memory_increase > test_limit:
             raise rdtest.TestFailureException("Memory increase {} is too high".format(memory_increase))
         else:
             rdtest.log.success("Memory usage is OK")

@@ -83,7 +83,7 @@ class VK_Multi_Entry(rdtest.TestCase):
 
         self.controller.FreeTrace(trace)
 
-        vp = self.screen_crop_coords()
+        vp = self.screen_crop_coords(pipe.GetOutputTargets()[0].resource)
         midpoint_x = int(0.5*vp[2]+vp[0])
         midpoint_y = int(0.5*vp[3]+vp[1])
         history = self.controller.PixelHistory(pipe.GetOutputTargets()[0].resource,

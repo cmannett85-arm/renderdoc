@@ -5,15 +5,20 @@ import renderdoc as rd
 class VK_Line_Raster(rdtest.TestCase):
     demos_test_name = 'VK_Line_Raster'
 
-    # Line segments are relative to 100x75 framebuffers. We sample in each corner (adjusted to be sure even with
-    # slightly varying rasterization we should sample in the line endpoint) and in the middle
-    points = [
-           [ 6,  69 ],
-           [ 50, 36 ],
-           [ 93, 5  ],
+    def _configure_points(self):
+        texdetails = self.get_texture(self.tex)
+
+        # Each viewport takes up 25% of the viewport dimensions
+        self.view = [int(texdetails.width * 0.25), int(texdetails.height * 0.25)]
+
+        # Each line starts and end at the viewport's corner offset by 5% of the viewport dimensions
+        # per end (plus a raster fudge factor)
+        self.points = [
+            [int(self.view[0] * 0.05) + 2, int(self.view[1] * 0.95) - 2],
+            [int(self.view[0] * 0.5), int(self.view[1] * 0.5)],
+            [int(self.view[0] * 0.95) - 2, int(self.view[1] * 0.05) + 2],
         ]
 
-    view = [ 100, 75 ]
 
     def sample(self, row, col):
         ret = []
@@ -37,8 +42,7 @@ class VK_Line_Raster(rdtest.TestCase):
         pipe: rd.PipeState = self.controller.GetPipelineState()
 
         self.tex = pipe.GetOutputTargets()[0].resource
-
-        texdetails = self.get_texture(self.tex)
+        self._configure_points()
 
         # Top left we expect a regular line segment.
         s = self.sample(0, 0)

@@ -27,8 +27,9 @@ class VK_Shader_Printf(rdtest.TestCase):
 
         self.check(len(vkpipe.shaderMessages) == 8, "Expected 8 messages for draw, got {}"
                    .format(len(vkpipe.shaderMessages)))
-
-        vp = self.screen_crop_coords()
+        
+        pipe: rd.PipeState = self.controller.GetPipelineState()
+        vp = self.screen_crop_coords(pipe.GetOutputTargets()[0].resource)
         midpoint_x = int(0.5*vp[2]+vp[0])
         midpoint_y = int(0.5*vp[3]+vp[1])
         for msg in vkpipe.shaderMessages:
@@ -37,7 +38,7 @@ class VK_Shader_Printf(rdtest.TestCase):
                            "Invalid message is wrong: {}".format(msg.message))
             else:
                 expected = "pixel:{0},{1},{0}.50, {1}.50,{2}".format(msg.location.pixel.x, msg.location.pixel.y,
-                                                                     int(msg.location.pixel.x == 201))
+                                                                     int(msg.location.pixel.x == (midpoint_x+1)))
                 self.check(msg.message == expected,
                            "Message is wrong. Got '{}' expected '{}'".format(msg.message, expected))
 

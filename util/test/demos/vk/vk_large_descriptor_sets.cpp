@@ -33,7 +33,12 @@ RD_TEST(VK_Large_Descriptor_Sets, VulkanGraphicsTest)
 
   bool updateAfterBind = false;
   static const uint32_t index = 77;
+
+#ifdef __ANDROID__
+  static const uint32_t arraySize = 1000 * 100;
+#else
   static const uint32_t arraySize = 1000 * 1000;
+#endif
 
   std::string common = R"EOSHADER(
 
